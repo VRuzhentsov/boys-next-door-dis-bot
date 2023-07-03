@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  dis-bot:
+    image: vruzhentsov/boys-next-door-dis-bot
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
