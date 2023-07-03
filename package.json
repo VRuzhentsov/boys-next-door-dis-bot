@@ -24,14 +24,19 @@
     "@discord-nestjs/common": "^5.2.5",
     "@discord-nestjs/core": "^5.3.7",
     "@discordjs/core": "^0.6.0",
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.16.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
     "class-transformer": "^0.5.1",
     "discord.js": "^14.11.0",
+    "libsodium-wrappers": "^0.7.11",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "sodium-native": "^4.0.4",
+    "spotify-web-api-node": "^5.0.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

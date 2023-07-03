@@ -4,11 +4,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   ApplicationCommandPermissionType,
   GatewayIntentBits,
-  Message,
+  PermissionFlagsBits,
 } from 'discord.js';
 
 import { BotModule } from './dis-bot/dis-bot.module';
-import { PlayDto } from './dis-bot/dto/play.dto';
 
 @Module({
   imports: [
@@ -17,6 +16,8 @@ import { PlayDto } from './dis-bot/dto/play.dto';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         token: configService.get('TOKEN'),
+        autoLogin: true,
+        shutdownOnAppDestroy: true,
         discordClientOptions: {
           intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
         },
@@ -24,18 +25,8 @@ import { PlayDto } from './dis-bot/dto/play.dto';
           {
             forGuild: configService.get('GUILD_ID_WITH_COMMANDS'),
             removeCommandsBefore: true,
-          },
-        ],
-        slashCommandsPermissions: [
-          {
-            commandClassType: PlayDto,
-            permissions: [
-              {
-                id: configService.get('ROLE_WITHOUT_PLAYLIST_PERMISSION'),
-                type: ApplicationCommandPermissionType.User,
-                permission: true,
-              },
-            ],
+            // allowFactory: (message: Message) =>
+            //   !message.author.bot && message.content === '!deploy',
           },
         ],
         failOnLogin: true,
