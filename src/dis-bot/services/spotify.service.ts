@@ -1,10 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as SpotifyWebApi from 'spotify-web-api-node/src/server';
+import { Song } from '../models/song.model';
+
+export interface IProviderService {
+  search(query: string): Promise<any>;
+  getSongMetadata(url: string): Promise<Song>;
+}
 
 @Injectable()
-export class SpotifyService {
-  private readonly spotifyApi;
+export class SpotifyService implements IProviderService {
+  private readonly spotifyApi: SpotifyWebApi;
   private readonly logger = new Logger(SpotifyService.name);
   constructor(private readonly configService: ConfigService) {
     this.spotifyApi = new SpotifyWebApi({
@@ -31,5 +37,11 @@ export class SpotifyService {
 
   async search(query: string) {
     return this.spotifyApi.searchTracks(query);
+  }
+
+  async getSongMetadata(url: string): Promise<Song> {
+    const trackId = url.split('/').pop();
+    const track = await this.spotifyApi.getTrack(trackId);
+    return Song.fromSpotify(track.body);
   }
 }

@@ -4,7 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { PlayCommand } from './commands/play.command';
 import { PlaylistCommand } from './commands/playlist.command';
-import { PlayService } from './services/play.service';
+import { BridgeService } from './services/bridge.service';
+import { PlayerService } from './services/player.service';
 import { SpotifyService } from './services/spotify.service';
 
 @Module({
@@ -12,9 +13,10 @@ import { SpotifyService } from './services/spotify.service';
   providers: [
     PlayCommand,
     PlaylistCommand,
-    PlayService,
+    BridgeService,
     SpotifyService,
     ConfigService,
+    PlayerService,
   ],
 })
 export class BotModule {}

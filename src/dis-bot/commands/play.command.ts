@@ -15,11 +15,17 @@ import {
   GuildMember,
   PermissionFlagsBits,
 } from 'discord.js';
+import { Track as STrack } from 'shoukaku';
 
 import { PlayDto } from '../dto/play.dto';
-import { PlayService } from '../services/play.service';
+import { Provider, Song } from '../models/song.model';
+import { BridgeService } from '../services/bridge.service';
+import { PlayerService } from '../services/player.service';
 import { SpotifyService } from '../services/spotify.service';
 
+interface Track extends STrack {
+  encoded: string;
+}
 @Command({
   name: 'play',
   description: 'Plays a song: ' + new Date().toLocaleString('en-US'),
@@ -28,26 +34,51 @@ import { SpotifyService } from '../services/spotify.service';
 export class PlayCommand {
   private readonly logger = new Logger(PlayCommand.name);
   constructor(
-    private readonly playService: PlayService,
+    private readonly bridgeService: BridgeService,
+    private readonly playerService: PlayerService,
     private readonly spotifyService: SpotifyService,
   ) {}
   @Handler()
-  onPlayCommand(
+  async onPlayCommand(
     @InteractionEvent(SlashCommandPipe) dto: PlayDto,
     @EventParams() args: ClientEvents['interactionCreate'],
-  ): object {
+  ): Promise<object> {
     const interaction: ChatInputCommandInteraction =
       args[0] as ChatInputCommandInteraction;
     const member: GuildMember = interaction.member as GuildMember;
+
+    const { song } = dto;
+
+    const [provider, url] = song.split(';') as [Provider, string];
     if (!member.voice.channelId) {
       return {
         content: 'You must be in a voice channel to use this command.',
       };
     }
 
-    this.playService.join(member.voice.channelId, member.guild);
+    const node = this.playerService.getNode();
+    const result = await node.rest.resolve('scsearch:' + song);
 
-    return this.playService.play('dto.song');
+    const encodedTrack = result.tracks[0].encoded;
+    this.logger.log('onPlayCommand', {
+      song,
+      encodedTrack,
+    });
+
+    try {
+      await this.bridgeService.join(
+        member.voice.channelId,
+        interaction.channelId,
+        member.guild,
+      );
+    } catch (error) {
+      this.logger.error('onPlayCommand', error, error.stack);
+      return {
+        content: 'I could not join your voice channel.',
+      };
+    }
+
+    return this.bridgeService.play(provider, url, encodedTrack);
   }
 
   @On('interactionCreate')
@@ -58,25 +89,36 @@ export class PlayCommand {
     const focusedValue = interaction.options.getFocused();
     // const songString = interaction.options.getString('song');
     if (!focusedValue) return;
-    const foundItems = await this.spotifyService.search(focusedValue);
+    const node = this.playerService.getNode();
+    let searchResult;
+    try {
+      // searchResult = await node.rest.resolve('spsearch:' + focusedValue);
+      searchResult = await node.rest.resolve('scsearch:' + focusedValue);
+    } catch (error) {
+      this.logger.error(error);
+      return [];
+    }
+    const foundItems: Track[] = searchResult.tracks;
     this.logger.debug('onAutocomplete', {
       // songString,
       // foundItems,
-      interaction,
+      // interaction,
       focusedValue,
     });
-    const result: ApplicationCommandOptionChoiceData[] =
-      foundItems.body.tracks.items.map((item) => {
-        const fullName =
-          item.artists.map((artist) => artist.name).join(', ') +
-          ' - ' +
-          item.name;
-        return {
-          name: fullName.substring(0, 100),
-          value: fullName.substring(0, 100), // TODO: replace with some ID or whatever
-        };
-      });
+    const result = foundItems.map((item) => {
+      const song = Song.fromLava(item.info);
+      // this.logger.debug('foundItems', { item });
+      const name = song.author + ' - ' + song.name;
+      return {
+        name: name.substring(0, 100),
+        value: name.substring(0, 100), // TODO: replace with some ID or whatever
+      };
+    });
 
-    await interaction.respond(result);
+    try {
+      await interaction.respond(result);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 }

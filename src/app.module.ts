@@ -16,10 +16,14 @@ import { BotModule } from './dis-bot/dis-bot.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         token: configService.get('TOKEN'),
-        autoLogin: true,
+        autoLogin: false,
         shutdownOnAppDestroy: true,
         discordClientOptions: {
-          intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+          intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildVoiceStates,
+          ],
         },
         registerCommandOptions: [
           {
