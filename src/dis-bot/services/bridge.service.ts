@@ -9,7 +9,7 @@ import {
   Guild,
   MessageActionRowComponentBuilder,
 } from 'discord.js';
-import { Provider } from '../models/song.model';
+import { Provider, Song } from '../models/song.model';
 import { PlayerService } from './player.service';
 import { IProviderService, SpotifyService } from './spotify.service';
 
@@ -28,35 +28,31 @@ export class BridgeService {
     provider: Provider,
     url: string,
     encodedTrack: string,
+    song: Song,
   ): Promise<object> {
-    // const providerService: IProviderService = this.getProviderService(provider);
+    this.logger.log('play', { url, song });
 
-    // const songMetadata = await providerService.getSongMetadata(url);
-    const songMetadata = {};
+    const pauseButton = new ButtonBuilder()
+      .setCustomId('pause')
+      .setLabel('Pause')
+      .setStyle(ButtonStyle.Secondary);
 
-    this.logger.log('play', { url });
-    // this.player.queue.push(songMetadata);
-
-    // this.player.play(resource);
     const row =
       new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId('primary')
-          .setLabel('Pause not working')
-          .setStyle(ButtonStyle.Primary),
+        pauseButton,
       );
 
     this.logger.debug('node', { url });
 
     try {
-      await this.playerService.play({ track: encodedTrack });
+      await this.playerService.play({ track: encodedTrack }, song);
     } catch (error) {
       this.logger.error('play', error);
       return { content: `Error playing song.` };
     }
 
     return {
-      content: `Start playing: ${''}.`,
+      content: `Start playing: ${song.fullName}.`,
       components: [row],
     };
   }

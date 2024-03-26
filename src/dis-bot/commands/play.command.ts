@@ -8,8 +8,12 @@ import {
 } from '@discord-nestjs/core';
 import { Logger } from '@nestjs/common';
 import {
+  ActionRowBuilder,
   ApplicationCommandOptionChoiceData,
   AutocompleteInteraction,
+  ButtonBuilder,
+  ButtonInteraction,
+  ButtonStyle,
   ChatInputCommandInteraction,
   ClientEvents,
   GuildMember,
@@ -78,7 +82,9 @@ export class PlayCommand {
       };
     }
 
-    return this.bridgeService.play(provider, url, encodedTrack);
+    const track: Song = Song.fromLava(result.tracks[0].info);
+
+    return this.bridgeService.play(provider, url, encodedTrack, track);
   }
 
   @On('interactionCreate')
@@ -119,6 +125,41 @@ export class PlayCommand {
       await interaction.respond(result);
     } catch (error) {
       this.logger.error(error);
+    }
+  }
+
+  @On('interactionCreate')
+  async onInteractionCreate(
+    @InteractionEvent() interaction: ButtonInteraction,
+  ) {
+    if (interaction.customId === 'pause') {
+      await this.playerService.pause();
+
+      const unpauseButton = new ButtonBuilder()
+        .setCustomId('resume')
+        .setLabel('Resume')
+        .setStyle(ButtonStyle.Primary);
+
+      const row = new ActionRowBuilder().addComponents(unpauseButton);
+
+      await interaction.update({
+        content: `Paused: ${this.playerService.currentSong.fullName}`,
+        components: [row as any],
+      });
+    } else if (interaction.customId === 'resume') {
+      await this.playerService.resume();
+
+      const pauseButton = new ButtonBuilder()
+        .setCustomId('pause')
+        .setLabel('Pause')
+        .setStyle(ButtonStyle.Secondary);
+
+      const row = new ActionRowBuilder().addComponents(pauseButton);
+
+      await interaction.update({
+        content: `Playing: ${this.playerService.currentSong.fullName}`,
+        components: [row as any],
+      });
     }
   }
 }

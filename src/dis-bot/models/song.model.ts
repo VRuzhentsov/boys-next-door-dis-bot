@@ -23,11 +23,7 @@ export class Song {
   }
 
   get fullName() {
-    return (
-      this.artists.map((artist) => artist.name).join(', ') +
-      ' - ' +
-      this.name
-    ).substring(0, 100);
+    return [this.author, this.name].join(' - ').substring(0, 100);
   }
   get value() {
     return `${this.provider}${PROVIDER_SPLITTER}${this.url}`.substring(0, 100);

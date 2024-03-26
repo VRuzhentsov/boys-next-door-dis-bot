@@ -9,12 +9,14 @@ import {
   Shoukaku,
   VoiceChannelOptions,
 } from 'shoukaku';
+import { Song } from '../models/song.model';
 
 @Injectable()
 export class PlayerService {
   private player: Player;
   private readonly shoukaku;
   private readonly logger = new Logger(PlayerService.name);
+  public currentSong: Song;
   constructor(
     @InjectDiscordClient()
     private readonly client: Client,
@@ -23,7 +25,7 @@ export class PlayerService {
     const Nodes = [
       {
         name: 'main',
-        url: 'localhost:2333',
+        url: 'lavalink:2333',
         auth: this.configService.get('LAVALINK_SERVER_PASSWORD'),
       },
     ];
@@ -38,8 +40,23 @@ export class PlayerService {
     this.logger.log('PlayerService initialized');
   }
 
-  async play(options: PlayOptions) {
+  async play(options: PlayOptions, song: Song) {
+    this.currentSong = song;
     return this.player.playTrack(options);
+  }
+
+  async pause(): Promise<Player> {
+    if (!this.player) {
+      throw new Error('No player is currently active.');
+    }
+    return this.player.setPaused(true);
+  }
+
+  async resume(): Promise<Player> {
+    if (!this.player) {
+      throw new Error('No player is currently active.');
+    }
+    return this.player.setPaused(false);
   }
 
   async joinVoiceChannel(
@@ -48,8 +65,12 @@ export class PlayerService {
     const node = this.getNode();
     if (!node) throw new Error('No available nodes.');
     Object.assign(options, { shardId: 0, deaf: true, mute: true });
-    this.player = await node.joinChannel(options);
-    this.logger.debug('joinVoiceChannel', {});
+    try {
+      this.player = await node.joinChannel(options);
+    } catch (error) {
+      this.logger.error('Error joining voice channel:', error);
+      throw error;
+    }
     return this.player;
   }
 

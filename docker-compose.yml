@@ -36,8 +36,8 @@ services:
       - lavalink
     expose:
       - 2333 # lavalink exposes port 2333 to connect to for other containers (this is for documentation purposes only)
-    ports:
-      - 2333:2333 # you only need this if you want to make your lavalink accessible from outside of containers
+    #ports:
+    #  - 2333:2333 # you only need this if you want to make your lavalink accessible from outside of containers
 
   mongo:
     image: mongo
@@ -50,8 +50,7 @@ services:
       - mongo
 
 networks:
+  lavalink: # create a lavalink network you can add other containers to, to give them access to Lavalink
+    name: lavalink
   mongo:
     driver: bridge
-
-  lavalink: # create a lavalink network you can add other containers to, to give them access to Lavalink
-      name: lavalink
