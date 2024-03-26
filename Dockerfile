@@ -1,7 +1,5 @@
 FROM node:lts-alpine as base
 
-WORKDIR /app
-
 RUN apk add \
     make \
     g++ \
@@ -9,19 +7,24 @@ RUN apk add \
 
 FROM base as dependencies
 
+RUN mkdir /app && chown -R node:node /app
+USER node
 WORKDIR /app
 
 COPY --chown=node:node .yarn ./.yarn
-COPY --chown=node:node .pnp.cjs .yarnrc.yml package.json yarn.lock ./
-RUN echo ls -lah
+COPY --chown=node:node .pnp.cjs .yarnrc.yml package.json yarn.lock .pnp.loader.mjs ./
 
-RUN cd /app && echo 'YARN VERSION IN BUILDER: ' && yarn --version
 # Note yarn rebuild - this is to let yarn rebuild binaries
 RUN yarn install --inline-builds
 
 FROM dependencies as builder
 
+# RUN mkdir /app && chown -R node:node /app
+USER node
 WORKDIR /app
+
+ARG NODE_ENV=production
+ENV NODE_ENV $NODE_ENV
 
 COPY --chown=node:node . .
 COPY --chown=node:node --from=dependencies /app/.yarn ./.yarn
@@ -31,15 +34,16 @@ RUN yarn build
 
 FROM base AS runner
 
-USER node
+# ARG NODE_ENV=production
+# ENV NODE_ENV $NODE_ENV
 
-#ENV NODE_ENV production
+# RUN mkdir /app && chown -R node:node /app
+USER node
 WORKDIR /app
 
 COPY --chown=node:node --from=dependencies /app/.yarn ./.yarn
 COPY --chown=node:node --from=builder /app/dist ./dist
 COPY --chown=node:node . .
-RUN echo ls -lah
 
 # The step below is from the Next.js Dockerfile example, but we don't need it because we use Yarn's Zero-installs.
 #COPY --from=builder ./node_modules ./node_modules/
@@ -48,7 +52,6 @@ RUN echo ls -lah
 # We also have to remove unplugged, so that rebuilding happens and replaces the old binaries
 #RUN rm -rf /app/.yarn/unplugged && yarn rebuild
 #RUN chown -R nestjs:nodejs /app/
-RUN echo "YARN VERSION IN RUNNER: " && yarn --version
 
 EXPOSE 3000
 

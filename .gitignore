@@ -47,3 +47,5 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 .env
+
+docker-compose.override.yml

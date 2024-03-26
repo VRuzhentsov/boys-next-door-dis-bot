@@ -2,14 +2,23 @@ version: "3.7"
 
 services:
   dis-bot:
-    image: vruzhentsov/boys-next-door-dis-bot
+    container_name: dis-bot
+    # user: "node:node"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dis-bot:latest
+    # image: vruzhentsov/boys-next-door-dis-bot
     restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
       - .env
+    volumes:
+      - ./src:/app/src
     networks:
       - lavalink
+      - mongo
 
   lavalink:
     image: ghcr.io/lavalink-devs/lavalink:3-alpine # pin the image version to Lavalink v3
@@ -30,6 +39,19 @@ services:
     ports:
       - 2333:2333 # you only need this if you want to make your lavalink accessible from outside of containers
 
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    volumes:
+      - ./data:/data/db:rw
+    ports:
+      - 27017:27017
+    networks:
+      - mongo
+
 networks:
-    lavalink: # create a lavalink network you can add other containers to, to give them access to Lavalink
-        name: lavalink
+  mongo:
+    driver: bridge
+
+  lavalink: # create a lavalink network you can add other containers to, to give them access to Lavalink
+      name: lavalink
